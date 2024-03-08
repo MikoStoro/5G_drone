@@ -1,0 +1,1 @@
+while true; do eval "$(cat ./comm_pipe)" &> ./pipe_output; done;
