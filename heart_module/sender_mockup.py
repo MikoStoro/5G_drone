@@ -5,8 +5,6 @@ import time
 # def on_log(client, userdata, level, buf):
 #     print("log: ",buf)
 
-
-
 flag_connected = 0
 def on_connect(client, userdata, flags, rc):
    global flag_connected
@@ -29,10 +27,10 @@ while(True):
     if flag_connected == 1:
         # Publish message
         message = random.randbytes(random.randint(4,32))
-        client.publish("5gdrone/bluetooth", str(message))
+        client.publish("5gdrone/bluetooth", str({'key1' : 123, 'key2' : 456}))
         time.sleep(random.randint(1,4))
         message = random.randbytes(random.randint(4,32))
-        client.publish("5gdrone/zigbee2mqtt", str(message))
+        client.publish("5gdrone/zigbee2mqtt", "abcdef")
         time.sleep(random.randint(1,4))
     else:
         # Wait to reconnect
