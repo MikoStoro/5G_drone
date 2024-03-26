@@ -27,10 +27,10 @@ while(True):
     if flag_connected == 1:
         # Publish message
         message = random.randbytes(random.randint(4,32))
-        client.publish("5gdrone/bluetooth", str({'key1' : 123, 'key2' : 456}))
+        client.publish("5gdrone/heart/bluetooth", str({'key1' : 123, 'key2' : 456}))
         time.sleep(random.randint(1,4))
         message = random.randbytes(random.randint(4,32))
-        client.publish("5gdrone/zigbee2mqtt", "abcdef")
+        client.publish("5gdrone/heart/zigbee2mqtt", "abcdef")
         time.sleep(random.randint(1,4))
     else:
         # Wait to reconnect

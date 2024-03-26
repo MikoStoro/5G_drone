@@ -9,8 +9,12 @@ TYPE_ZB=1
 ST_RECIEVED=0
 ST_DELIVERED=1
 
-db_client = pymongo.MongoClient("localhost", 27017)
+bt_topic = "bluetooth"
+zb_topic= "zigbee2mqtt"
 
+
+db_client = pymongo.MongoClient("localhost", 27017)
+db = db_client.drone_db
 '''
 EXAMPLE ENTRY:
 type: bt/zigbee
@@ -21,15 +25,25 @@ id jest generowane zawsze, automatycznie
 '''
 
 def get_entry_type(topic):
-    if topic == '':
-        pass
+    return topic[2]
 
-def push_entry():
 
+def push_entry(data, topic):
+    entry_time = datetime.datetime.now()
+    entry_type = get_entry_type(topic)
+    entry_value = data
+    entry_status = ST_RECIEVED
+    entry = {"time" : entry_time,
+             "type" : entry_type,
+             "value" : entry_value,
+             "status" : entry_status}
+    entry_id = db.received_data.insert_one(entry).inserted_id
+    print("inserted " + str(entry_id))
     pass
 
-def change_status():
-    
+def mark_delivered(id):
+    new_value={"$set" : {"status":ST_DELIVERED}}
+    db.received_data.update_one({"_id" : id}, new_value, upsert=False)
     pass
 
 def process_payload(payload, encoding='utf-8'):
@@ -46,26 +60,30 @@ def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    client.subscribe("5gdrone/#")
+    client.subscribe("5gdrone/heart/#")
 
 
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     print(msg.topic+" "+str(msg.payload))
-    print(process_payload(msg.payload))
+    data = process_payload(msg.payload)
+   
+
     topic = msg.topic.split('/')
     
     ##select action based on topic
-    if(topic[1] in ['bluetooth', 'zigbee2mqtt']):
-        pass
-    elif(topic[1] == 'test'): 
-        push_entry()
+    if(topic[2] in [bt_topic, zb_topic]):
+        push_entry(data, topic)
+    elif(topic[2] == 'test'): 
+        push_entry(data, topic)
     else:
-        print("Unsupported option")
+        print("Unsupported topic: " + str(topic[2]))
+
+    #for testing reasons
+    for item in db.received_data.find():
+        print(item)
     
-    entry_time = datetime.datetime.now()
-    print(curr_time)
 
 client = mqtt.Client()
 client.on_connect = on_connect
