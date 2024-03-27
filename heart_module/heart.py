@@ -2,6 +2,20 @@ import paho.mqtt.client as mqtt
 import ast
 import pymongo
 import datetime
+import time
+
+##CONFIG
+settings={
+"resend_timeout" : 10, #10 s
+"max_db_size" : 1000000 #1 MB
+}
+
+##END CONFIG
+
+##STATE
+
+##END STATE
+
 
 TYPE_BT=0
 TYPE_ZB=1
@@ -11,7 +25,6 @@ ST_DELIVERED=1
 
 bt_topic = "bluetooth"
 zb_topic= "zigbee2mqtt"
-
 
 db_client = pymongo.MongoClient("localhost", 27017)
 db = db_client.drone_db
@@ -24,8 +37,26 @@ status: delivered/awaiting
 id jest generowane zawsze, automatycznie
 '''
 
+
+
+def send_data(data):
+    client.publish('5gdrone/client/data', payload=data)
+
 def get_entry_type(topic):
     return topic[2]
+
+def resend_data():
+    for item in db.received_data.find():
+        if item['status'] != ST_DELIVERED:
+            send_data(item) 
+    pass
+
+def process_command(data):
+    if(data == 'resend'):
+        resend_data()
+    else:
+        print("unknown command")
+
 
 
 def push_entry(data, topic):
@@ -33,16 +64,17 @@ def push_entry(data, topic):
     entry_type = get_entry_type(topic)
     entry_value = data
     entry_status = ST_RECIEVED
-    entry = {"time" : entry_time,
+    entry = {"time" : str(entry_time),
              "type" : entry_type,
              "value" : entry_value,
              "status" : entry_status}
     entry_id = db.received_data.insert_one(entry).inserted_id
     print("inserted " + str(entry_id))
-    pass
+    return entry_id
 
 def mark_delivered(id):
     new_value={"$set" : {"status":ST_DELIVERED}}
+
     db.received_data.update_one({"_id" : id}, new_value, upsert=False)
     pass
 
@@ -75,8 +107,14 @@ def on_message(client, userdata, msg):
     ##select action based on topic
     if(topic[2] in [bt_topic, zb_topic]):
         push_entry(data, topic)
+
     elif(topic[2] == 'test'): 
         push_entry(data, topic)
+    elif(topic[2] == 'command'):
+        print("received command:" + str(data))
+        process_command(data)
+    elif(topic[2] == 'settings'):
+        print("settings updated: " + str(data))
     else:
         print("Unsupported topic: " + str(topic[2]))
 
@@ -90,8 +128,10 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.connect("localhost", 1883, 60)
 
-# Blocking call that processes network traffic, dispatches callbacks and
-# handles reconnecting.
-# Other loop*() functions are available that give a threaded interface and a
-# manual interface.
-client.loop_forever()
+
+client.loop_start()
+
+while True:
+    time.sleep(settings['resend_timeout'])
+    #the mqtt client thread will carry out all db operations, to make synchronizarion easier
+    client.publish("5gdrone/heart/command", "resend")
