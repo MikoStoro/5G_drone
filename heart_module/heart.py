@@ -6,9 +6,10 @@ import time
 
 ##CONFIG
 settings={
-"resend_timeout" : 10, #10 s
-"max_db_size" : 1000000 #1 MB
+    "resend_timeout" : 1, #10 s
+    "max_db_size" : 1000000 #1 MB
 }
+resend_time = None
 
 ##END CONFIG
 
@@ -40,26 +41,46 @@ id jest generowane zawsze, automatycznie
 
 
 def send_data(data):
-    client.publish('5gdrone/client/data', payload=data)
+    try:
+        data = str(data)
+        print("sending " + data)
+        client.publish('5gdrone/client/data', payload=str(data))
+    except:
+        print("ERROR while sending data: cannot cast to string!")
+   
 
 def get_entry_type(topic):
     return topic[2]
 
 def resend_data():
+    now = datetime.datetime.now()
     for item in db.received_data.find():
         if item['status'] != ST_DELIVERED:
-            send_data(item) 
+            print(item['time'])
+            item_time = datetime.datetime.fromisoformat(item['time'])
+            time_diff = now - item_time
+            if(time_diff > resend_time):
+                send_data(item)
     pass
 
+def get_db_size():
+    stats = db.command('dbstats')
+    return stats['dataSize']
+
 def process_command(data):
-    if(data == 'resend'):
+    data = data.split(' ')
+    if(data[0] == 'resend_all'):
         resend_data()
+    elif(data[0] == 'confirm'):
+        confirm_id = data[1]
+        mark_delivered(confirm_id)
     else:
         print("unknown command")
 
 
 
 def push_entry(data, topic):
+
     entry_time = datetime.datetime.now()
     entry_type = get_entry_type(topic)
     entry_value = data
@@ -70,11 +91,11 @@ def push_entry(data, topic):
              "status" : entry_status}
     entry_id = db.received_data.insert_one(entry).inserted_id
     print("inserted " + str(entry_id))
+    print("curent size: " + str(get_db_size()))
     return entry_id
 
 def mark_delivered(id):
     new_value={"$set" : {"status":ST_DELIVERED}}
-
     db.received_data.update_one({"_id" : id}, new_value, upsert=False)
     pass
 
@@ -94,14 +115,31 @@ def on_connect(client, userdata, flags, rc):
     # reconnect then subscriptions will be renewed.
     client.subscribe("5gdrone/heart/#")
 
+def get_time_from_seconds(val):
+    seconds = val % 60
+    val = val // 60
+    if(val == 0):
+        return(datetime.time(second=seconds))
 
+    minutes = val %60
+    val = val//60
+    if(val == 0):
+        return(datetime.time(second=seconds, minute=minutes))
+    
+    hours = val % 24
+    val = val//24
+    if(val == 0):
+        return(datetime.time(hour=hours, minute=minutes, second=seconds))
+    else:
+        raise ValueError("Timeout cannotg be longer than 24 hours!")
+
+
+    pass 
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     print(msg.topic+" "+str(msg.payload))
     data = process_payload(msg.payload)
-   
-
     topic = msg.topic.split('/')
     
     ##select action based on topic
@@ -127,11 +165,12 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect("localhost", 1883, 60)
-
-
 client.loop_start()
+
+resend_time = get_time_from_seconds(settings["resend_timeout"])
+
 
 while True:
     time.sleep(settings['resend_timeout'])
     #the mqtt client thread will carry out all db operations, to make synchronizarion easier
-    client.publish("5gdrone/heart/command", "resend")
+    client.publish("5gdrone/heart/command", "resend_all")
