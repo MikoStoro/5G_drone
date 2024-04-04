@@ -16,7 +16,7 @@ def on_disconnect(client, userdata, rc):
    flag_connected = 0
    print("Disconnected with result code "+str(rc))
 
-client = mqtt.Client()
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 #client.on_log=on_log

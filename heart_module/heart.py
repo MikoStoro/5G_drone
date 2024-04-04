@@ -30,18 +30,21 @@ zb_topic= "zigbee2mqtt"
 db_client = pymongo.MongoClient("localhost", 27017)
 db = db_client.drone_db
 '''
-EXAMPLE ENTRY:
-type: bt/zigbee
-time: datetime
-value: received data
-status: delivered/awaiting
-id jest generowane zawsze, automatycznie
+    EXAMPLE ENTRY:
+    type: bt/zigbee
+    time: datetime
+    value: received data
+    status: delivered/awaiting
+    id jest generowane zawsze, automatycznie
 '''
 
 
 
 def send_data(data):
     try:
+        #data = str(data)
+        strid = str(data["_id"])
+        data["_id"] = strid
         data = str(data)
         print("sending " + data)
         client.publish('5gdrone/client/data', payload=str(data))
@@ -59,8 +62,8 @@ def resend_data():
             print(item['time'])
             item_time = datetime.datetime.fromisoformat(item['time'])
             time_diff = now - item_time
-            if(time_diff > resend_time):
-                send_data(item)
+            #if(time_diff > resend_time):
+            send_data(item)
     pass
 
 def get_db_size():
@@ -80,14 +83,13 @@ def process_command(data):
 
 
 def push_entry(data, topic):
-
     entry_time = datetime.datetime.now()
     entry_type = get_entry_type(topic)
-    entry_value = data
+    entry_value = str(data)
     entry_status = ST_RECIEVED
     entry = {"time" : str(entry_time),
              "type" : entry_type,
-             "value" : entry_value,
+             "value" : str(entry_value),
              "status" : entry_status}
     entry_id = db.received_data.insert_one(entry).inserted_id
     print("inserted " + str(entry_id))
@@ -104,9 +106,10 @@ def process_payload(payload, encoding='utf-8'):
     data=None
     try:
         data=ast.literal_eval(decoded)
+        return data
     except:
         data=decoded
-    return data
+        return data
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -161,7 +164,7 @@ def on_message(client, userdata, msg):
         print(item)
     
 
-client = mqtt.Client()
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect("localhost", 1883, 60)
