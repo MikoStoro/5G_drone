@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+from bson.objectid import ObjectId
 import ast
 import pymongo
 import datetime
@@ -6,8 +7,8 @@ import time
 
 ##CONFIG
 settings={
-    "resend_timeout" : 1, #10 s
-    "max_db_size" : 1000000 #1 MB
+    "resend_timeout" : 5, #10 s
+    "max_db_size" : 1000 #1 kB
 }
 resend_time = None
 
@@ -62,13 +63,18 @@ def resend_data():
             print(item['time'])
             item_time = datetime.datetime.fromisoformat(item['time'])
             time_diff = now - item_time
-            #if(time_diff > resend_time):
-            send_data(item)
+            if(time_diff > resend_time):
+                send_data(item)
     pass
 
 def get_db_size():
     stats = db.command('dbstats')
     return stats['dataSize']
+
+def clear_sent():
+    query = {'status' : ST_DELIVERED}
+    deleted = db.received_data.delete_many(query)
+    print("deleted " + str(deleted['n']) + " entries")
 
 def process_command(data):
     data = data.split(' ')
@@ -77,6 +83,8 @@ def process_command(data):
     elif(data[0] == 'confirm'):
         confirm_id = data[1]
         mark_delivered(confirm_id)
+    elif(data[0] == 'clear_sent'):
+        clear_sent()
     else:
         print("unknown command")
 
@@ -93,12 +101,16 @@ def push_entry(data, topic):
              "status" : entry_status}
     entry_id = db.received_data.insert_one(entry).inserted_id
     print("inserted " + str(entry_id))
-    print("curent size: " + str(get_db_size()))
+    size = get_db_size()
+    print("curent size: " + str(size))
+    if(size > settings["max_db_size"]):
+        client.publish("5gdrone/heart/command", "clear_sent")
     return entry_id
 
-def mark_delivered(id):
+def mark_delivered(identifier):
+    print("confirming: " + identifier)
     new_value={"$set" : {"status":ST_DELIVERED}}
-    db.received_data.update_one({"_id" : id}, new_value, upsert=False)
+    db.received_data.update_one({"_id" : ObjectId(identifier)}, new_value)
     pass
 
 def process_payload(payload, encoding='utf-8'):
@@ -122,19 +134,19 @@ def get_time_from_seconds(val):
     seconds = val % 60
     val = val // 60
     if(val == 0):
-        return(datetime.time(second=seconds))
+        return(datetime.timedelta(seconds=seconds))
 
     minutes = val %60
     val = val//60
     if(val == 0):
-        return(datetime.time(second=seconds, minute=minutes))
+        return(datetime.timedelta(seconds=seconds, minutes=minutes))
     
     hours = val % 24
     val = val//24
     if(val == 0):
-        return(datetime.time(hour=hours, minute=minutes, second=seconds))
+        return(datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds))
     else:
-        raise ValueError("Timeout cannotg be longer than 24 hours!")
+        raise ValueError("Timeout cannot be longer than 24 hours!")
 
 
     pass 
@@ -173,7 +185,16 @@ client.loop_start()
 resend_time = get_time_from_seconds(settings["resend_timeout"])
 
 
+timer = 0
 while True:
-    time.sleep(settings['resend_timeout'])
-    #the mqtt client thread will carry out all db operations, to make synchronizarion easier
-    client.publish("5gdrone/heart/command", "resend_all")
+    #reset every 24h
+    if timer>=86400:
+        timer = 0
+
+    time.sleep(1)
+    timer += 1
+    if(timer % settings['resend_timeout'] == 0):
+        #the mqtt client thread will carry out all db operations, to make synchronizarion easier
+        print("sending resend command")
+        client.publish("5gdrone/heart/command", "resend_all")
+        
