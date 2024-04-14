@@ -1,7 +1,5 @@
 import paho.mqtt.client as mqtt
-from bson.objectid import ObjectId
 import ast
-import pymongo
 import datetime
 import time
 from tinydb import TinyDB, Query
@@ -30,7 +28,7 @@ ST_DELIVERED=1
 bt_topic = "bluetooth"
 zb_topic= "zigbee2mqtt"
 
-db_client = pymongo.MongoClient("localhost", 27017)
+#db_client = pymongo.MongoClient("localhost", 27017)
 #db = db_client.drone_db
 db_path = 'drone.json'
 db = TinyDB(db_path)
