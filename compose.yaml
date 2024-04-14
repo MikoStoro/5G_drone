@@ -1,23 +1,26 @@
-version: ‘3.3’
+#version: ‘3.7’
 services:
   mqtt:
-    image: eclipse-mosquitto:2
-    restart: unless_stopped
-    volumes:
-      - „./mosquitto-data:/mosquitto”
+    image: eclipse-mosquitto:latest
+    restart: always
     ports:
-      - „1883:1883”
-    command: „mosquitto –c /mosquitto-no-auth.conf”
+    - 1883:1883
+    command: "mosquitto -c /mosquitto-no-auth.conf"
   zigbee2mqtt:
     container_name: zigbee2mqtt
-    restart: unless_stopped
-    image: koenkk/zigbee2mqtt:1.30.0
+    restart: always
+    image: koenkk/zigbee2mqtt:latest
     volumes:
-      - ./zigbee2mqtt-data:/app/data
-      - /run/udev:/run/udev:ro
+    - ./zigbee2mqtt-data:/app/data
+    - /run/udev:/run/udev 
     ports:
-      - 8080:8080
+    - 8080:8080
     environment:
-      - TZ=Europe/Warsaw
+    - TZ=Europe/Warsaw
     devices:
-      - /dev/ttyACM0:/dev/ttyACM0
+    - /dev/ttyACM0:/dev/ttyACM0
+
+volumes:
+  zigbee2mqtt-data:
+  mosquitto-data:
+  udev:

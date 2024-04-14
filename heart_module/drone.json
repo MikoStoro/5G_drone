@@ -1,0 +1,1 @@
+{"_default": {"49": {"time": "2024-04-14 21:10:02.157185", "type": "zigbee2mqtt", "value": "abcdef", "status": 1, "_id": 49}, "50": {"time": "2024-04-14 21:10:03.158001", "type": "bluetooth", "value": "{'key1': 123, 'key2': 456}", "status": 1, "_id": 50}, "51": {"time": "2024-04-14 21:10:04.158731", "type": "zigbee2mqtt", "value": "abcdef", "status": 1, "_id": 51}}}

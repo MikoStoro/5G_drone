@@ -74,12 +74,12 @@ def resend_data():
 def get_db_size():
     #stats = db.command('dbstats')
     #return stats['dataSize']
-    #os.path.getsize(db_path)
-    return len(db)
+    return os.path.getsize(db_path)
+    #return len(db)
 
 def clear_sent():
     #query = {'status' : ST_DELIVERED}
-    query = Query().status = ST_DELIVERED
+    query = Query().status == ST_DELIVERED
     #deleted = db.received_data.delete_many(query)
     deleted = db.remove(query)
     print("deleted " + str(deleted) + " entries")
@@ -96,9 +96,11 @@ def process_command(data):
     else:
         print("unknown command")
 
-def get_sendable_doc(id):
-    doc = db.get(doc_id=id)
-    doc['_id'] = id
+def get_sendable_doc(identifier):
+    doc = db.get(doc_id=identifier)
+    print(doc)
+    doc['_id'] = identifier
+    print(doc['_id'])
     return doc
 
 def push_entry(data, topic):
@@ -113,12 +115,18 @@ def push_entry(data, topic):
     #entry_id = db.received_data.insert_one(entry).inserted_id
     entry_id = db.insert(entry)
     print("inserted " + str(entry_id))
+    
+    #
+    db.update({'_id' : entry_id}, doc_ids=[int(entry_id)]) 
+    
     size = get_db_size()
     print("curent size: " + str(size))
     if(size > settings["max_db_size"]):
         client.publish("5gdrone/heart/command", "clear_sent")
     return entry_id
 
+def get_entry(identifier):
+    return db.get(doc_id=identifier)
 
 def mark_delivered(identifier):
     print("confirming: " + identifier)
@@ -176,11 +184,10 @@ def on_message(client, userdata, msg):
     ##select action based on topic
     if(topic[2] in [bt_topic, zb_topic]):
         entry_id = push_entry(data, topic)
-        print(get_sendable_doc(entry_id))
-        send_data(get_sendable_doc(entry_id))
+        send_data(get_entry(entry_id))
     elif(topic[2] == 'test'): 
         entry_id = push_entry(data, topic)
-        send_data(get_sendable_doc(entry_id))
+        send_data(get_entry(entry_id))
     elif(topic[2] == 'command'):
         print("received command:" + str(data))
         process_command(data)

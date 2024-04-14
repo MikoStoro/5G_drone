@@ -30,7 +30,7 @@ def on_message(client,userdata,msg):
     id = data['_id']
     resposne= "confirm " + str(id)
     tresc.value += str(data) + '\n'
-    client.publish("5gdrone/heart/command")
+    client.publish("5gdrone/heart/command", resposne)
     
     
 
