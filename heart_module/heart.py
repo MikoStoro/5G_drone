@@ -4,6 +4,8 @@ import ast
 import pymongo
 import datetime
 import time
+from tinydb import TinyDB, Query
+import os
 
 ##CONFIG
 settings={
@@ -29,7 +31,9 @@ bt_topic = "bluetooth"
 zb_topic= "zigbee2mqtt"
 
 db_client = pymongo.MongoClient("localhost", 27017)
-db = db_client.drone_db
+#db = db_client.drone_db
+db_path = 'drone.json'
+db = TinyDB(db_path)
 '''
     EXAMPLE ENTRY:
     type: bt/zigbee
@@ -40,14 +44,13 @@ db = db_client.drone_db
 '''
 
 
-
 def send_data(data):
     try:
         #data = str(data)
-        strid = str(data["_id"])
-        data["_id"] = strid
-        data = str(data)
-        print("sending " + data)
+        #strid = str(data["_id"])
+        #data["_id"] = strid
+        #data = str(data)
+        print("sending" + str(data))
         client.publish('5gdrone/client/data', payload=str(data))
     except:
         print("ERROR while sending data: cannot cast to string!")
@@ -58,7 +61,8 @@ def get_entry_type(topic):
 
 def resend_data():
     now = datetime.datetime.now()
-    for item in db.received_data.find():
+    #for item in db.received_data.find():
+    for item in db:
         if item['status'] != ST_DELIVERED:
             print(item['time'])
             item_time = datetime.datetime.fromisoformat(item['time'])
@@ -68,13 +72,17 @@ def resend_data():
     pass
 
 def get_db_size():
-    stats = db.command('dbstats')
-    return stats['dataSize']
+    #stats = db.command('dbstats')
+    #return stats['dataSize']
+    #os.path.getsize(db_path)
+    return len(db)
 
 def clear_sent():
-    query = {'status' : ST_DELIVERED}
-    deleted = db.received_data.delete_many(query)
-    print("deleted " + str(deleted['n']) + " entries")
+    #query = {'status' : ST_DELIVERED}
+    query = Query().status = ST_DELIVERED
+    #deleted = db.received_data.delete_many(query)
+    deleted = db.remove(query)
+    print("deleted " + str(deleted) + " entries")
 
 def process_command(data):
     data = data.split(' ')
@@ -88,7 +96,10 @@ def process_command(data):
     else:
         print("unknown command")
 
-
+def get_sendable_doc(id):
+    doc = db.get(doc_id=id)
+    doc['_id'] = id
+    return doc
 
 def push_entry(data, topic):
     entry_time = datetime.datetime.now()
@@ -99,7 +110,8 @@ def push_entry(data, topic):
              "type" : entry_type,
              "value" : str(entry_value),
              "status" : entry_status}
-    entry_id = db.received_data.insert_one(entry).inserted_id
+    #entry_id = db.received_data.insert_one(entry).inserted_id
+    entry_id = db.insert(entry)
     print("inserted " + str(entry_id))
     size = get_db_size()
     print("curent size: " + str(size))
@@ -107,11 +119,15 @@ def push_entry(data, topic):
         client.publish("5gdrone/heart/command", "clear_sent")
     return entry_id
 
+
 def mark_delivered(identifier):
     print("confirming: " + identifier)
-    new_value={"$set" : {"status":ST_DELIVERED}}
-    db.received_data.update_one({"_id" : ObjectId(identifier)}, new_value)
-    pass
+    
+    #new_value={"$set" : {"status":ST_DELIVERED}}
+    #db.received_data.update_one({"_id" : ObjectId(identifier)}, new_value)
+    db.update({'status' : ST_DELIVERED}, doc_ids=[int(identifier)]) 
+    
+
 
 def process_payload(payload, encoding='utf-8'):
     decoded=payload.decode(encoding)
@@ -159,10 +175,12 @@ def on_message(client, userdata, msg):
     
     ##select action based on topic
     if(topic[2] in [bt_topic, zb_topic]):
-        push_entry(data, topic)
-
+        entry_id = push_entry(data, topic)
+        print(get_sendable_doc(entry_id))
+        send_data(get_sendable_doc(entry_id))
     elif(topic[2] == 'test'): 
-        push_entry(data, topic)
+        entry_id = push_entry(data, topic)
+        send_data(get_sendable_doc(entry_id))
     elif(topic[2] == 'command'):
         print("received command:" + str(data))
         process_command(data)
@@ -172,7 +190,8 @@ def on_message(client, userdata, msg):
         print("Unsupported topic: " + str(topic[2]))
 
     #for testing reasons
-    for item in db.received_data.find():
+    #for item in db.received_data.find():
+    for item in db:
         print(item)
     
 
