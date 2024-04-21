@@ -1,0 +1,22 @@
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{~\x19\xb3\x1d\x01\x00\x84\xa7\xca\x12al\x11t\x84\xc8'}, tx_power=-2, rssi=-70)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{~\x19\xb3\x1d\x01\x00\x84\xa7\xca\x12al\x11t\x84\xc8'}, tx_power=-2, rssi=-69)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{~\x19\xb3\x1d\x01\x00\x84\xa7\xca\x12al\x11t\x84\xc8'}, tx_power=-2, rssi=-69)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-74)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-74)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-69)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-69)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-69)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-72)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-74)
+Device found: D0:F0:18:44:1B:E5 - iNode-441BE5
+Advertisement data: AdvertisementData(local_name='iNode-441BE5', manufacturer_data={37776: b'\x01\xc0\x00\x00\xd8{\x81\x19\xa0\x1d\x01\x00\xc0\xa7\xc8R\xfeyx<\xc0/'}, tx_power=-2, rssi=-74)
