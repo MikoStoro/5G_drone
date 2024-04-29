@@ -1,6 +1,8 @@
 import serial
 import time
 
+port = "/dev/ttyUSB2"
+
 def convert_to_comm(text):
 	text += '\r\n'
 	text = text.encode()
@@ -24,7 +26,7 @@ def wait_till_end(mp):
 
 
 def send_command(text):
-	mp = serial.Serial("/dev/ttyUSB2")
+	mp = serial.Serial(port)
 	
 	command = convert_to_comm(text)
 	mp.write(command)
@@ -34,6 +36,16 @@ def send_command(text):
 	waiting = mp.in_waiting
 	data = mp.read(waiting)
 	return response_to_text(data)
+
+
+
+def send_and_leave(comm, args = []):
+	mp = serial.Serial(port)
+	comm = comm + ','.join(args)
+	command = convert_to_comm(comm)
+	mp.write(command)
+	return
+	
 
 
 

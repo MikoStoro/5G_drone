@@ -1,5 +1,6 @@
 import serial
 import time
+import send_command
 
 mp = serial.Serial("/dev/ttyUSB2")
 
