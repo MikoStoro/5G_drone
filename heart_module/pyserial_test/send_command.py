@@ -5,7 +5,8 @@ port = "/dev/ttyUSB2"
 
 def convert_to_comm(text):
 	text += '\r\n'
-	text = text.encode()
+	if type(text) is str:
+		text = text.encode()
 	return text
 
 def response_to_text(response):
