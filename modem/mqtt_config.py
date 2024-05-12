@@ -1,4 +1,4 @@
-path = 'mqtt.config'
+path = 'config-files/mqtt.config'
 
 
 

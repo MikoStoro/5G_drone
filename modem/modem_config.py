@@ -1,7 +1,7 @@
 import send_command
 
 DEVICE = '/dev/ttyUSB2'
-CONFIG_PATH = './modem.config'
+CONFIG_PATH = 'config-files/modem.config'
 
 
 file = open(CONFIG_PATH)
