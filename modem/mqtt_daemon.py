@@ -45,55 +45,91 @@ client.connect("localhost", 1883, 60)
 client.loop_start()
 #To be addded later
 
-write_buffer = ['at', 'ati', 'cops?']
+write_buffer = []
+address = "10.111.1.54:1883"
 address = config.get_address()
-topics = config.get_topics()
+#topics = config.get_topics()
+topics = ['a','b','c']
+
+def get_core(comm:str):
+    return comm.split("+")[1].split("=")[0]
 
 
+class BufferItem:
+    def __init__(self,command:str):
+        self.command = command
+        self.sent = False
+class BufferCommand(BufferItem): 
+    def __init__(self,command:str):
+        self.command = command
+        self.core = get_core(command)
+        self.got_response = False
+        self.sent = False
+
+write_buffer.append(BufferCommand("ati"))
+write_buffer.append(BufferCommand("cops"))
+
+
+def write_command(command: str):
+    write_buffer.append(BufferCommand(command))
+
+def write_data(data: str):
+    write_buffer.append(BufferItem(data))
 
 def get_len(text:str):
     return str(len(text.encode()))
 
-def enter_topics():
-    with write_buffer_lock:
-        for topic in topics:
-            comm = 'AT+CMQTTSUBTOPIC=0,' #client index
-            comm += get_len(topic) #Topic length
-            comm += ',0' #QOS
-            write_buffer.append(comm)
-            write_buffer.append(topic)
-        comm = 'AT+CMQTTSUB=0'
-        write_buffer.append(comm)
 
+def enter_topic(topic):
+    comm = 'AT+CMQTTSUBTOPIC=0,' #client index
+    comm += get_len(topic) #Topic length
+    comm += ',0' #QOS
+    write_command(comm)
+    write_data(topic)
+    comm = 'AT+CMQTTSUB=0'
+    write_command(comm)
+
+def enter_topics():
+    for topic in topics:
+        enter_topic(topic)
 
 def mqtt_init():
-    with write_buffer_lock:
-        comm = 'AT+CMQTTSTART'
-        write_buffer.append(comm)
-        comm = 'AT+CMQTTACCQ=0,5G_DRONE,0,3' #index,id,tcp,version
-        write_buffer.append(comm)
-        comm = 'AT+CMQTTCONNECT=0,tcp://' + str(address) + '60,0'
-        write_buffer.append(comm)
+    comm = 'AT+CMQTTSTART'
+    write_command(comm)
+    comm = 'AT+CMQTTACCQ=0,"5G_DRONE",0,3' #index,id,tcp,version
+    write_command(comm)
+    comm = 'AT+CMQTTCONNECT=0,"tcp://' + str(address) + '",60,0'
+    write_command(comm)
 
 def mqtt_publish(topic, data):
-    with write_buffer_lock:
-        comm = 'AT+CMQTTTOPIC=0,' + get_len(topic)
-        write_buffer.append(comm)
-        write_buffer.append(topic)
-        comm = 'AT+CMQTTPAYLOAD=0,' + get_len(data)
-        write_buffer.append(comm)
-        write_buffer.append(data)
-        comm = 'AT+CQMTTPUB=0,0,120'
-        write_buffer.append(comm)
+    comm = 'AT+CMQTTTOPIC=0,' + get_len(topic)
+    write_command(comm)
+    write_data(topic)
+    comm = 'AT+CMQTTPAYLOAD=0,' + get_len(data)
+    write_command(comm)
+    write_data(data)
+    comm = 'AT+CQMTTPUB=0,0,120'
+    write_command(comm)
 
 current_payload = None
 current_topic = None
 
 
-def process_command(line):
+def process_response(line):
     split_line = line.split(':')
     command = split_line[0]
     parameters = []
+    core = get_core(line)
+    
+    
+    #mark item that got the response
+    for item in write_buffer:
+        if type(item) is BufferCommand:
+            comm = BufferCommand(item)
+            if comm.core == core and not comm.got_response:
+                comm.got_response = True
+                break
+                
     if len(split_line) > 1:
         parameters = split_line[1].strip().split(',')
 
@@ -144,6 +180,9 @@ def process_command(line):
     else:
         print("Command not supported: " + command)
 
+mqtt_init()
+enter_topics()
+
 while(True):
     waiting = mp.in_waiting
     if(waiting > 0):
@@ -157,18 +196,29 @@ while(True):
                 line = split_buffer[i]
                 if(len(line)>0):
                     print('Line: ' + split_buffer[i])
-                    process_command(split_buffer[i])
+                    process_response(split_buffer[i])
             read_buffer = split_buffer[-1] #leave only the incomplete command
 
+        
     #Begin critical section
-    new_write_buffer = []
+    already_waiting = False
     with write_buffer_lock:
         for line in write_buffer:
+            if type(line) is BufferCommand:
+                command  = BufferCommand(line)
+                if not command.got_response:
+                    if not already_waiting: already_waiting = True
+                    else: break
+            
+            item = BufferItem(line)
             try:
-                comm.send_and_leave(line) #lines will always be supplied whole
+                comm.send_and_leave(item.command) #lines will always be supplied whole
+                item.sent = True
             except:
-                new_write_buffer.append(line)
-        write_buffer = new_write_buffer #remove all successfully written lines
+               break
+         
+        #remove all successfully written lines
+        write_buffer[:] = [x for x in write_buffer if not BufferItem(x).sent]
     #end critical section
     time.sleep(0.1)
         
