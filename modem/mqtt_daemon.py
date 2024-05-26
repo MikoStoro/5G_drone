@@ -38,18 +38,22 @@ def on_disconnect(client, userdata, rc):
    flag_connected = 0
    print("Disconnected with result code "+str(rc))
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.connect("localhost", 1883, 60)
 client.loop_start()
-#To be addded later
 
 write_buffer = []
-address = "10.111.1.54:1883"
-address = config.get_address()
+#address = "10.111.1.54:1883"
+server_address = "cow.rmq2.cloudamqp.com"
+server_topics = ['a','b','c']
+server_uname = "vtzciybt:vtzciybt"
+server_password = "b_F7I3JHJVgw9LdVcJ8zL6zTheLb0-6Z"
+#address = config.get_address()
 #topics = config.get_topics()
-topics = ['a','b','c']
+##TODO: add password and uname to config file
+
 
 def get_core(comm:str):
     return comm.split("+")[1].split("=")[0]
@@ -79,6 +83,8 @@ def write_data(data: str):
 def get_len(text:str):
     return str(len(text.encode()))
 
+def clear_buffer():
+    write_buffer.clear()
 
 def enter_topic(topic):
     comm = 'AT+CMQTTSUBTOPIC=0,' #client index
@@ -90,7 +96,7 @@ def enter_topic(topic):
     write_command(comm)
 
 def enter_topics():
-    for topic in topics:
+    for topic in server_topics:
         enter_topic(topic)
 
 def mqtt_init():
@@ -98,7 +104,9 @@ def mqtt_init():
     write_command(comm)
     comm = 'AT+CMQTTACCQ=0,"5G_DRONE",0,3' #index,id,tcp,version
     write_command(comm)
-    comm = 'AT+CMQTTCONNECT=0,"tcp://' + str(address) + '",60,0'
+    comm = 'AT+CMQTTCONNECT=0,"tcp://' + str(server_address) + '",60,0'
+    if server_uname is not None and server_password is not None:
+        comm += ',' + server_uname + ',' + server_password
     write_command(comm)
 
 def mqtt_publish(topic, data):
@@ -108,7 +116,7 @@ def mqtt_publish(topic, data):
     comm = 'AT+CMQTTPAYLOAD=0,' + get_len(data)
     write_command(comm)
     write_data(data)
-    comm = 'AT+CQMTTPUB=0,0,120'
+    comm = 'AT+CQMTTPUB=0,0,120,0,0'
     write_command(comm)
 
 current_payload = None
