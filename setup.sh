@@ -16,5 +16,6 @@ cp $SCRIPT_DIR/config-files/zigbee2mqtt_configuration.yaml $SCRIPT_DIR/zigbee2mq
 python -m venv $SCRIPT_DIR/drone-venv #create venv for drone
 source $SCRIPT_DIR/drone-venv/bin/activate
 python -m pip install -r $SCRIPT_DIR/requirements.txt #install dependencies
+deactivate
 
 echo 'setup complete'

@@ -1,5 +1,9 @@
 asarPy==1.0.1
+future==1.0.0
+iso8601==2.1.0
 paho-mqtt==2.0.0
+pyserial==3.5
 python-dateutil==2.9.0.post0
+PyYAML==6.0.1
 six==1.16.0
 tinydb==4.8.0

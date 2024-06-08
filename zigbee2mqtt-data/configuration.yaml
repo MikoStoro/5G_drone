@@ -1,0 +1,12 @@
+permit_join: true
+mqtt:
+  base_topic: 5gdrone/heart/zigbee2mqtt
+  server: mqtt://mqtt
+serial:
+  port: /dev/ttyACM0
+  adapter: ezsp
+frontend:
+  port: 8080
+advanced:
+  network_key: GENERATE
+
