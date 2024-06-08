@@ -12,7 +12,7 @@ commands = list(filter(lambda x: x != '', commands)) #remove empty lines
 
 all_sent = False
 
-mp = modem_utils.open_port()
+mp = modem_utils.open_port(DEVICE)
 
 
 

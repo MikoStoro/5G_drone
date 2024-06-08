@@ -1,21 +1,17 @@
 import serial
 import time
-import modem_utils as comm
+import modem_utils as modem
 import paho.mqtt.client as mqtt
 import threading
 import mqtt_config as config
 
+
 port_open = 0
 #try until port eopens
+DEVICE = '/dev/ttyUSB2'
 
-while port_open == 0:
-    try: 
-        mp = serial.Serial("/dev/ttyUSB2")
-        port_open = 1
-    except:
-        print('could not open port, retrying...')
-        time.sleep(1)
 
+mp = modem.open_port(DEVICE)
 
 read_buffer = ''
 write_buffer = []
@@ -39,11 +35,7 @@ def on_disconnect(client, userdata, rc):
    flag_connected = 0
    print("Disconnected with result code "+str(rc))
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.connect("localhost", 1883, 60)
-client.loop_start()
+
 
 write_buffer = []
 '''#address = "10.111.1.54:1883"
@@ -55,10 +47,18 @@ server_password = "b_F7I3JHJVgw9LdVcJ8zL6zTheLb0-6Z"
 #topics = config.get_topics()
 '''
 cfg = config.get_config()
+print(cfg)
 server_address = cfg['address']
 server_topics = cfg['topics']
 server_uname = cfg['login']
 server_password = cfg['password']
+
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.connect('localhost', 1883, 60)
+client.loop_start()
 
 
 def get_core_resp(comm:str):
@@ -76,7 +76,6 @@ def get_core_comm(comm:str):
 
 class BufferItem:
     def __init__(self,command:str):
-        print("created Item: " + str(type(command)))
         self.command = command
         self.sent = False
         self.got_response = False
@@ -110,12 +109,13 @@ def enter_topic(topic):
     comm += ',0' #QOS
     write_command(comm)
     write_data(topic)
-    comm = 'AT+CMQTTSUB=0'
-    write_command(comm)
+
 
 def enter_topics():
     for topic in server_topics:
         enter_topic(topic)
+        comm = 'AT+CMQTTSUB=0'
+        write_command(comm)
 
 def mqtt_init():
     comm = 'AT+CMQTTSTART'
@@ -141,22 +141,30 @@ current_payload = None
 current_topic = None
 
 
+awaiting_response_data = None
+
 def process_response(line):
     global write_buffer
-    print(line=='ERROR')
-    print(line == 'OK')
-    if '=' in line:
-        print(line +" is not a valid response")
+    global current_topic
+    global current_payload
+    global awaiting_response_data
+        
+    print("Received:" + line + " " + str(awaiting_response_data))
+    
+
+    if ('=' or '?') in line:
+        print("Not a valid response")
         return
     try:
         split_line = line.split(':')
         command = split_line[0].split("+")[1]
         parameters = []
-        okerror=False
+        simple_line=False
+        
     except:
         command = line
-        okerror = True
-    
+        simple_line = True
+
     #mark item that got the response
     '''for item in write_buffer:
         if type(item) is BufferCommand:
@@ -173,10 +181,11 @@ def process_response(line):
             if line == 'OK' or line =='ERROR':
                 print(str(comm) + 'got response! ' + line)
                 comm.got_response = True
-                
-    if okerror: return
+                break
+
+    print(str(awaiting_response_data))
     
-    if len(split_line) > 1:
+    if not simple_line and len(split_line) > 1:
         parameters = split_line[1].strip().split(',')
 
     if command == 'COPS':
@@ -198,6 +207,7 @@ def process_response(line):
             enter_topics()
         else:
             print('Connection failed!')
+            clear_buffer()
             mqtt_init()
 
     elif command == '+CMQTTNONET' or command == '+CMQTTCONNLOST':
@@ -209,25 +219,42 @@ def process_response(line):
         current_payload = None
 
     elif command == 'CMQTTRXTOPIC':
-        if current_topic is None:
-            current_topic = parameters[2]
-        else:
-            current_topic += parameters[2]
+        awaiting_response_data = 'topic'
+        print("AWAITING RESPONSE DATA: TOPIC")
 
     elif command == 'CMQTTRXPAYLOAD':
-        if current_payload is None:
-            current_payload = parameters[2]
-        else:
-            current_payload += parameters[2]
+        awaiting_response_data = 'payload'
+        print("AWAITING RESPONSE DATA: PAYLOAD")
     
     elif command == 'CMQTTRXEND':
-        client.publish(current_topic, current_payload)
+        if(current_payload is not None and current_topic is not None):
+            print("SENDING " + current_payload + "TO TOPIC" + current_topic)
+            client.publish(current_topic, current_payload)
         
     else:
+
+        if awaiting_response_data is not None:
+                
+            print("COMMAND:" + command)
+    
+            if awaiting_response_data == 'topic':
+                if current_topic is None:
+                    current_topic = command
+                else:
+                    current_topic += command
+                print("TOPIC IS NOW: " +current_topic)
+            if awaiting_response_data == 'payload':
+                if current_payload is None:
+                    current_payload = command
+                else:
+                    current_payload += command
+                print("PAYLOAD IS NOW: " +current_payload)
+            awaiting_response_data = None
+                
+        
         print("Command not supported: " + command)
 
 mqtt_init()
-enter_topics()
 
 while(True):
     waiting = mp.in_waiting
@@ -242,7 +269,6 @@ while(True):
             for i in range(len(split_buffer)-1): #last line will be incomplete
                 line = split_buffer[i]
                 if(len(line)>0):
-                    print('Line: ' + split_buffer[i])
                     process_response(split_buffer[i])
             read_buffer = split_buffer[-1] #leave only the incomplete command
 
@@ -250,12 +276,6 @@ while(True):
     #Begin critical section
     already_waiting = False
     with write_buffer_lock:
-        '''print("State of write buffer:")
-        for x in write_buffer:
-            if type(x) is BufferCommand:
-                print(str(x) + " Response: " + str(x.got_response) + " sent: " + str(x.sent))
-            else:
-                print(str(x))'''
         awaiting_data = False
         if '>' in read_buffer:
             awaiting_data = True
@@ -269,18 +289,18 @@ while(True):
                 #print("we have a command here")
                 if item.sent == False:
                     print("sending " + str(item))
-                    comm.send_and_leave(mp,item.command) 
+                    modem.send_and_leave(mp,item.command) 
                     item.sent = True
             elif item.sent == False and awaiting_data:
                 print("sending " + str(item))
-                comm.send_and_leave(mp,item.command)
+                modem.send_and_leave(mp,item.command)
                 item.sent = True
                 item.got_response = True
         
         if len(write_buffer) >= 2:
             item = write_buffer[1]
             if type(item) is not BufferCommand and item.sent == False and awaiting_data:
-                comm.send_and_leave(mp,item.command)
+                modem.send_and_leave(mp,item.command)
                 print("sending " + str(item))
                 item.sent = True
                 item.got_response = True
@@ -309,6 +329,6 @@ while(True):
          
         #remove all successfully written lines
         write_buffer[:] = [ x for x in write_buffer if (x.got_response == False)]
-    #end critical section
-    time.sleep(0.1)
+        #end critical section
+        time.sleep(0.25)
         

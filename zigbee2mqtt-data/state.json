@@ -1,0 +1,9 @@
+{
+    "0x001788010cd9261b": {
+        "occupancy": false,
+        "battery": 47,
+        "illuminance": 27677,
+        "illuminance_lux": 586,
+        "occupancy_timeout": 0
+    }
+}

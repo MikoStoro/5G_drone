@@ -8,5 +8,23 @@ serial:
 frontend:
   port: 8080
 advanced:
-  network_key: GENERATE
-
+  network_key:
+    - 132
+    - 204
+    - 66
+    - 80
+    - 206
+    - 8
+    - 224
+    - 180
+    - 213
+    - 25
+    - 169
+    - 210
+    - 208
+    - 47
+    - 127
+    - 118
+devices:
+  '0x001788010cd9261b':
+    friendly_name: '0x001788010cd9261b'

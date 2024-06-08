@@ -7,16 +7,13 @@ echo $SCRIPT_DIR
 echo "starting system..."
 source $SCRIPT_DIR/drone-venv/bin/activate
 
-#docker-compose up &  #prepare environment
-#sleep 5 #wait until mqtt server is online
+docker compose up &  #prepare environment
+sleep 5 #wait until mqtt server is online
 python $SCRIPT_DIR/modem/modem_config.py #configure modem before use
 echo 'MODEM CONFIGURED'
-$SCRIPT_DIR/heart_module/run_heart.sh &#start central module
+$SCRIPT_DIR/heart_module/run_heart.sh & #start central module
 echo 'HEART STARTED'
-
-$SCRIPT_DIR/modem/connect_modem.sh & #connect modem to the internet
-echo 'MODEM CONNECTED'
-$SCRIPT_DIR/modem/run_modem.sh &#start communication with the client
+$SCRIPT_DIR/modem/run_modem.sh & #start communication with the client
 echo 'MODEM DAEMON RUNNING'
 
 echo 'system is running' 

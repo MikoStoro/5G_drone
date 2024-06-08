@@ -3,30 +3,7 @@ import time
 
 port = "/dev/ttyUSB2"
 
-def open_port():
-	mp_inner = None
-	port_open = False
-    
-	while port_open == False:
-		try:
-			mp_inner = serial.Serial("/dev/ttyUSB2")
-			
-			read = ''
-			while(len(read) == 0):
-				print('port open, not responding yet...')
-				modem_utils.send_and_leave(mp_inner, 'at')
-				read = mp_inner.read(mp_inner.in_waiting)
-				print(read)
-				time.sleep(1)
-			port_open = True
-			
-		except Exception as e:
-			print('could not open port for configuration, retrying...')
-			print(e)
-			port_open = 0
-			time.sleep(1)
-			
-	return mp_inner
+
 
 def convert_to_comm(text):
 	text += '\r\n'
@@ -50,7 +27,7 @@ def send_and_wait(mp, text):
 	mp.write(command)
 	
 	data = read_response(mp)
-	return response_to_text(data)
+	return data
 
 
 
@@ -59,3 +36,37 @@ def send_and_leave(serial, comm, args = []):
 	command = convert_to_comm(comm)
 	serial.write(command)
 	return
+
+
+def hard_reset(dev = None):
+	if dev is None:
+		dev = port
+	mp = open_port(dev)
+	send_and_leave('at+cusbcfg=usbid,1e0e,9011')
+	mp = open_port(dev)
+	send_and_leave('at+cusbcfg=usbid,1e0e,9001')
+
+def open_port(device):
+	mp_inner = None
+	port_open = False
+    
+	while port_open == False:
+		try:
+			mp_inner = serial.Serial(device)
+			
+			read = ''
+			while(len(read) == 0):
+				print('port open, not responding yet...')
+				send_and_leave(mp_inner, 'at')
+				read = mp_inner.read(mp_inner.in_waiting)
+				print(read)
+				time.sleep(1)
+			port_open = True
+			
+		except Exception as e:
+			print('could not open port for configuration, retrying...')
+			print(e)
+			port_open = 0
+			time.sleep(1)
+			
+	return mp_inner

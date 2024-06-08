@@ -4,14 +4,25 @@ import datetime
 import time
 from tinydb import TinyDB, Query
 import os
+import heart_config 
+import sys
+
+
+ST_RECIEVED=0
+ST_DELIVERED=1
+
+disable_ap = 'sudo systemctl disable dnsmasq && sudo systemctl disable hostapd'
+enable_ap = 'sudo systemctl enable dnsmasq && sudo systemctl enable hostapd'
+connect_modem = 'sudo ' + sys.path[0] + '../modem/connect_modem.sh'
+disconnect_modem = 'sudo '
 
 ##CONFIG
-settings={
-    "resend_timeout" : 5, #10 s
-    "max_db_size" : 1000 #1 kB
-}
-resend_time = None
+cfg = heart_config.get_config()
 
+sensor_topics = cfg['sensor_topics']
+
+
+settings = cfg['settings']
 ##END CONFIG
 
 ##STATE
@@ -19,17 +30,6 @@ resend_time = None
 ##END STATE
 
 
-TYPE_BT=0
-TYPE_ZB=1
-
-ST_RECIEVED=0
-ST_DELIVERED=1
-
-bt_topic = "bluetooth"
-zb_topic= "zigbee2mqtt"
-
-#db_client = pymongo.MongoClient("localhost", 27017)
-#db = db_client.drone_db
 db_path = 'drone.json'
 db = TinyDB(db_path)
 '''
@@ -44,10 +44,6 @@ db = TinyDB(db_path)
 
 def send_data(data):
     try:
-        #data = str(data)
-        #strid = str(data["_id"])
-        #data["_id"] = strid
-        #data = str(data)
         print("sending" + str(data))
         client.publish('5gdrone/client/data', payload=str(data))
     except:
@@ -59,7 +55,6 @@ def get_entry_type(topic):
 
 def resend_data():
     now = datetime.datetime.now()
-    #for item in db.received_data.find():
     for item in db:
         if item['status'] != ST_DELIVERED:
             print(item['time'])
@@ -70,13 +65,9 @@ def resend_data():
     pass
 
 def get_db_size():
-    #stats = db.command('dbstats')
-    #return stats['dataSize']
     return os.path.getsize(db_path)
-    #return len(db)
 
 def clear_sent():
-    #query = {'status' : ST_DELIVERED}
     query = Query().status == ST_DELIVERED
     #deleted = db.received_data.delete_many(query)
     deleted = db.remove(query)
@@ -145,7 +136,6 @@ def process_payload(payload, encoding='utf-8'):
         data=decoded
         return data
 
-# The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
@@ -195,7 +185,6 @@ def on_message(client, userdata, msg):
         print("Unsupported topic: " + str(topic[2]))
 
     #for testing reasons
-    #for item in db.received_data.find():
     for item in db:
         print(item)
     
@@ -221,4 +210,3 @@ while True:
         #the mqtt client thread will carry out all db operations, to make synchronizarion easier
         print("sending resend command")
         client.publish("5gdrone/heart/command", "resend_all")
-        

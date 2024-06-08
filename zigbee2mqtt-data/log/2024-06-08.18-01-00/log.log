@@ -1,0 +1,28 @@
+[2024-06-08 18:01:00] info: 	z2m: Logging to console, file (filename: log.log)
+[2024-06-08 18:01:00] info: 	z2m: Starting Zigbee2MQTT version 1.38.0 (commit #fe048e6)
+[2024-06-08 18:01:00] info: 	z2m: Starting zigbee-herdsman (0.49.2)
+[2024-06-08 18:01:00] warning: 	zh:ezsp: Deprecated driver 'ezsp' currently in use, 'ember' will become the officially supported EmberZNet driver in next release. If using Zigbee2MQTT see https://github.com/Koenkk/zigbee2mqtt/discussions/21462
+[2024-06-08 18:01:08] error: 	zh:ezsp:uart: --> Error: Error: {"sequence":1} after 4000ms
+[2024-06-08 18:01:08] error: 	zh:ezsp:uart: -!- break waiting (1)
+[2024-06-08 18:01:08] error: 	zh:ezsp:uart: Can't send DATA frame (0,1,0): 1800012800
+[2024-06-08 18:01:10] info: 	z2m: zigbee-herdsman started (resumed)
+[2024-06-08 18:01:10] info: 	z2m: Coordinator firmware version: '{"meta":{"maintrel":"3 ","majorrel":"6","minorrel":"10","product":8,"revision":"6.10.3.0 build 297"},"type":"EZSP v8"}'
+[2024-06-08 18:01:10] info: 	z2m: Currently 1 devices are joined:
+[2024-06-08 18:01:10] info: 	z2m: 0x001788010cd9261b (0x001788010cd9261b): 9290030675 - Philips Hue motion sensor (EndDevice)
+[2024-06-08 18:01:10] warning: 	z2m: `permit_join` set to  `true` in configuration.yaml.
+[2024-06-08 18:01:10] warning: 	z2m: Allowing new devices to join.
+[2024-06-08 18:01:10] warning: 	z2m: Set `permit_join` to `false` once you joined all devices.
+[2024-06-08 18:01:10] info: 	z2m: Zigbee: allowing new devices to join.
+[2024-06-08 18:01:10] info: 	z2m:mqtt: Connecting to MQTT server at mqtt://mqtt
+[2024-06-08 18:01:10] info: 	z2m:mqtt: Connected to MQTT server
+[2024-06-08 18:01:10] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/state', payload 'online'
+[2024-06-08 18:01:10] info: 	z2m: Started frontend on port 8080
+[2024-06-08 18:01:10] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/config', payload '{"commit":"fe048e6","coordinator":{"meta":{"maintrel":"3 ","majorrel":"6","minorrel":"10","product":8,"revision":"6.10.3.0 build 297"},"type":"EZSP v8"},"log_level":"info","network":{"channel":11,"extendedPanID":221,"panID":6754},"permit_join":true,"version":"1.38.0"}'
+[2024-06-08 18:01:10] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"battery":47,"illuminance":28758,"illuminance_lux":751,"occupancy":false,"occupancy_timeout":0}'
+[2024-06-08 18:01:10] info: 	z2m: Zigbee2MQTT started!
+[2024-06-08 18:03:58] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/state', payload 'offline'
+[2024-06-08 18:03:58] info: 	z2m:mqtt: Disconnecting from MQTT server
+[2024-06-08 18:03:58] info: 	z2m: Stopping zigbee-herdsman...
+[2024-06-08 18:03:59] info: 	zh:controller: Wrote coordinator backup to '/app/data/coordinator_backup.json'
+[2024-06-08 18:03:59] info: 	z2m: Stopped zigbee-herdsman
+[2024-06-08 18:03:59] info: 	z2m: Stopped Zigbee2MQTT

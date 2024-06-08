@@ -1,0 +1,48 @@
+[2024-06-08 17:56:12] info: 	z2m: Logging to console, file (filename: log.log)
+[2024-06-08 17:56:12] info: 	z2m: Starting Zigbee2MQTT version 1.38.0 (commit #fe048e6)
+[2024-06-08 17:56:12] info: 	z2m: Starting zigbee-herdsman (0.49.2)
+[2024-06-08 17:56:13] warning: 	zh:ezsp: Deprecated driver 'ezsp' currently in use, 'ember' will become the officially supported EmberZNet driver in next release. If using Zigbee2MQTT see https://github.com/Koenkk/zigbee2mqtt/discussions/21462
+[2024-06-08 17:56:20] error: 	zh:ezsp:uart: --> Error: Error: {"sequence":1} after 4000ms
+[2024-06-08 17:56:20] error: 	zh:ezsp:uart: -!- break waiting (1)
+[2024-06-08 17:56:20] error: 	zh:ezsp:uart: Can't send DATA frame (0,1,0): 1800012800
+[2024-06-08 17:56:22] info: 	zh:controller: Wrote coordinator backup to '/app/data/coordinator_backup.json'
+[2024-06-08 17:56:22] info: 	z2m: zigbee-herdsman started (resumed)
+[2024-06-08 17:56:22] info: 	z2m: Coordinator firmware version: '{"meta":{"maintrel":"3 ","majorrel":"6","minorrel":"10","product":8,"revision":"6.10.3.0 build 297"},"type":"EZSP v8"}'
+[2024-06-08 17:56:22] info: 	z2m: Currently 0 devices are joined:
+[2024-06-08 17:56:22] warning: 	z2m: `permit_join` set to  `true` in configuration.yaml.
+[2024-06-08 17:56:22] warning: 	z2m: Allowing new devices to join.
+[2024-06-08 17:56:22] warning: 	z2m: Set `permit_join` to `false` once you joined all devices.
+[2024-06-08 17:56:22] info: 	z2m: Zigbee: allowing new devices to join.
+[2024-06-08 17:56:22] info: 	z2m:mqtt: Connecting to MQTT server at mqtt://mqtt
+[2024-06-08 17:56:22] info: 	z2m:mqtt: Connected to MQTT server
+[2024-06-08 17:56:22] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/state', payload 'online'
+[2024-06-08 17:56:23] info: 	z2m: Started frontend on port 8080
+[2024-06-08 17:56:23] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/config', payload '{"commit":"fe048e6","coordinator":{"meta":{"maintrel":"3 ","majorrel":"6","minorrel":"10","product":8,"revision":"6.10.3.0 build 297"},"type":"EZSP v8"},"log_level":"info","network":{"channel":11,"extendedPanID":221,"panID":6754},"permit_join":true,"version":"1.38.0"}'
+[2024-06-08 17:56:23] info: 	z2m: Zigbee2MQTT started!
+[2024-06-08 17:58:54] info: 	zh:controller: Interview for '0x001788010cd9261b' started
+[2024-06-08 17:58:54] info: 	z2m: Device '0x001788010cd9261b' joined
+[2024-06-08 17:58:54] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/event', payload '{"data":{"friendly_name":"0x001788010cd9261b","ieee_address":"0x001788010cd9261b"},"type":"device_joined"}'
+[2024-06-08 17:58:54] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/log', payload '{"message":{"friendly_name":"0x001788010cd9261b"},"type":"device_connected"}'
+[2024-06-08 17:58:54] info: 	z2m: Starting interview of '0x001788010cd9261b'
+[2024-06-08 17:58:54] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/event', payload '{"data":{"friendly_name":"0x001788010cd9261b","ieee_address":"0x001788010cd9261b","status":"started"},"type":"device_interview"}'
+[2024-06-08 17:58:54] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/log', payload '{"message":"interview_started","meta":{"friendly_name":"0x001788010cd9261b"},"type":"pairing"}'
+[2024-06-08 17:58:59] info: 	zh:controller: Succesfully interviewed '0x001788010cd9261b'
+[2024-06-08 17:58:59] info: 	z2m: Successfully interviewed '0x001788010cd9261b', device has successfully been paired
+[2024-06-08 17:58:59] info: 	z2m: Device '0x001788010cd9261b' is supported, identified as: Philips Hue motion sensor (9290030675)
+[2024-06-08 17:59:00] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/event', payload '{"data":{"definition":{"description":"Hue motion sensor","exposes":[{"access":1,"description":"Measured temperature value","label":"Temperature","name":"temperature","property":"temperature","type":"numeric","unit":"°C"},{"access":1,"description":"Indicates whether the device detected occupancy","label":"Occupancy","name":"occupancy","property":"occupancy","type":"binary","value_off":false,"value_on":true},{"access":1,"category":"diagnostic","description":"Remaining battery in %, can take up to 24 hours before reported","label":"Battery","name":"battery","property":"battery","type":"numeric","unit":"%","value_max":100,"value_min":0},{"access":1,"description":"Measured illuminance in lux","label":"Illuminance (lux)","name":"illuminance_lux","property":"illuminance_lux","type":"numeric","unit":"lx"},{"access":1,"description":"Raw measured illuminance","label":"Illuminance","name":"illuminance","property":"illuminance","type":"numeric"},{"access":7,"label":"Motion sensitivity","name":"motion_sensitivity","property":"motion_sensitivity","type":"enum","values":["low","medium","high","very_high","max"]},{"access":7,"description":"Blink green LED on motion detection","label":"Led indication","name":"led_indication","property":"led_indication","type":"binary","value_off":false,"value_on":true},{"access":7,"label":"Occupancy timeout","name":"occupancy_timeout","property":"occupancy_timeout","type":"numeric","unit":"s","value_max":65535,"value_min":0},{"access":1,"category":"diagnostic","description":"Link quality (signal strength)","label":"Linkquality","name":"linkquality","property":"linkquality","type":"numeric","unit":"lqi","value_max":255,"value_min":0}],"model":"9290030675","options":[{"access":2,"description":"Calibrates the temperature value (absolute offset), takes into effect on next report of device.","label":"Temperature calibration","name":"temperature_calibration","property":"temperature_calibration","type":"numeric"},{"access":2,"description":"Number of digits after decimal point for temperature, takes into effect on next report of device. This option can only decrease the precision, not increase it.","label":"Temperature precision","name":"temperature_precision","property":"temperature_precision","type":"numeric","value_max":3,"value_min":0},{"access":2,"description":"Calibrates the illuminance_lux value (percentual offset), takes into effect on next report of device.","label":"Illuminance lux calibration","name":"illuminance_lux_calibration","property":"illuminance_lux_calibration","type":"numeric"},{"access":2,"description":"Calibrates the illuminance value (percentual offset), takes into effect on next report of device.","label":"Illuminance calibration","name":"illuminance_calibration","property":"illuminance_calibration","type":"numeric"},{"access":2,"description":"Sends a message after the last time no occupancy (occupancy: false) was detected. When setting this for example to [10, 60] a `{\"no_occupancy_since\": 10}` will be send after 10 seconds and a `{\"no_occupancy_since\": 60}` after 60 seconds.","item_type":{"access":3,"label":"Time","name":"time","type":"numeric"},"label":"No occupancy since","name":"no_occupancy_since","property":"no_occupancy_since","type":"list"}],"supports_ota":false,"vendor":"Philips"},"friendly_name":"0x001788010cd9261b","ieee_address":"0x001788010cd9261b","status":"successful","supported":true},"type":"device_interview"}'
+[2024-06-08 17:59:00] info: 	z2m: Configuring '0x001788010cd9261b'
+[2024-06-08 17:59:00] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/bridge/log', payload '{"message":"interview_successful","meta":{"description":"Hue motion sensor","friendly_name":"0x001788010cd9261b","model":"9290030675","supported":true,"vendor":"Philips"},"type":"pairing"}'
+[2024-06-08 17:59:00] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"linkquality":255,"occupancy":true}'
+[2024-06-08 17:59:02] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"battery":47,"linkquality":255,"occupancy":true}'
+[2024-06-08 17:59:04] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"battery":47,"illuminance":28753,"illuminance_lux":750,"linkquality":255,"occupancy":true}'
+[2024-06-08 17:59:04] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"battery":47,"illuminance":28753,"illuminance_lux":750,"linkquality":255,"occupancy":true,"occupancy_timeout":0}'
+[2024-06-08 17:59:05] info: 	z2m: Successfully configured '0x001788010cd9261b'
+[2024-06-08 17:59:09] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"battery":47,"illuminance":28753,"illuminance_lux":750,"linkquality":255,"occupancy":false,"occupancy_timeout":0}'
+[2024-06-08 17:59:14] info: 	z2m:mqtt: MQTT publish: topic '5gdrone/heart/zigbee2mqtt/0x001788010cd9261b', payload '{"battery":47,"illuminance":28758,"illuminance_lux":751,"linkquality":255,"occupancy":false,"occupancy_timeout":0}'
+[2024-06-08 18:00:01] error: 	z2m:mqtt: Not connected to MQTT server!
+[2024-06-08 18:00:01] error: 	z2m:mqtt: Cannot send message: topic: '5gdrone/heart/zigbee2mqtt/bridge/state', payload: 'offline
+[2024-06-08 18:00:01] info: 	z2m:mqtt: Disconnecting from MQTT server
+[2024-06-08 18:00:01] info: 	z2m: Stopping zigbee-herdsman...
+[2024-06-08 18:00:02] info: 	zh:controller: Wrote coordinator backup to '/app/data/coordinator_backup.json'
+[2024-06-08 18:00:02] info: 	z2m: Stopped zigbee-herdsman
+[2024-06-08 18:00:02] info: 	z2m: Stopped Zigbee2MQTT
