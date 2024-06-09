@@ -4,14 +4,30 @@ import datetime
 import time
 from tinydb import TinyDB, Query
 import os
+import heart_config 
+import sys
+
+
+ST_RECIEVED=0
+ST_DELIVERED=1
+
+disable_ap = 'sudo systemctl disable dnsmasq && sudo systemctl disable hostapd'
+enable_ap = 'sudo systemctl enable dnsmasq && sudo systemctl enable hostapd'
+connect_modem = 'sudo ' + sys.path[0] + '../modem/connect_modem.sh'
+disconnect_modem = "sudo kill $(ps aux | grep connect_modem  | grep -v grep | awk '{print $2}')"
+
+client_data_topic = '5gdrone/client/data'
+client_settings_topic = '5gdrone/client/settings'
+heart_command_topic = '5gdrone/heart/command'
+heart_settings_topic = '5gdrone/heart_settings'
 
 ##CONFIG
-settings={
-    "resend_timeout" : 5, #10 s
-    "max_db_size" : 1000 #1 kB
-}
-resend_time = None
+cfg = heart_config.get_config()
 
+sensor_topics = cfg['sensor_topics']
+
+
+settings = cfg['settings']
 ##END CONFIG
 
 ##STATE
@@ -19,17 +35,6 @@ resend_time = None
 ##END STATE
 
 
-TYPE_BT=0
-TYPE_ZB=1
-
-ST_RECIEVED=0
-ST_DELIVERED=1
-
-bt_topic = "bluetooth"
-zb_topic= "zigbee2mqtt"
-
-#db_client = pymongo.MongoClient("localhost", 27017)
-#db = db_client.drone_db
 db_path = 'drone.json'
 db = TinyDB(db_path)
 '''
@@ -41,25 +46,24 @@ db = TinyDB(db_path)
     id jest generowane zawsze, automatycznie
 '''
 
+def update_wifi():
+	if settings['wifi']==0:
+		os.system(disable_ap)
+		os.system(disconnect_modem)
+	if settings['wifi']==1:
+		os.system(connect_modem)
+		os.system(enable_ap)
 
 def send_data(data):
     try:
-        #data = str(data)
-        #strid = str(data["_id"])
-        #data["_id"] = strid
-        #data = str(data)
         print("sending" + str(data))
-        client.publish('5gdrone/client/data', payload=str(data))
+        client.publish(client_data_topic, payload=str(data))
     except:
         print("ERROR while sending data: cannot cast to string!")
    
 
-def get_entry_type(topic):
-    return topic[2]
-
 def resend_data():
     now = datetime.datetime.now()
-    #for item in db.received_data.find():
     for item in db:
         if item['status'] != ST_DELIVERED:
             print(item['time'])
@@ -70,15 +74,10 @@ def resend_data():
     pass
 
 def get_db_size():
-    #stats = db.command('dbstats')
-    #return stats['dataSize']
     return os.path.getsize(db_path)
-    #return len(db)
 
 def clear_sent():
-    #query = {'status' : ST_DELIVERED}
     query = Query().status == ST_DELIVERED
-    #deleted = db.received_data.delete_many(query)
     deleted = db.remove(query)
     print("deleted " + str(deleted) + " entries")
 
@@ -91,6 +90,8 @@ def process_command(data):
         mark_delivered(confirm_id)
     elif(data[0] == 'clear_sent'):
         clear_sent()
+    elif(data[0] == 'get_settings'):
+	    client.publish(client_settings_topic, str(settings))
     else:
         print("unknown command")
 
@@ -101,26 +102,24 @@ def get_sendable_doc(identifier):
     print(doc['_id'])
     return doc
 
-def push_entry(data, topic):
+def push_entry(data, entry_type):
     entry_time = datetime.datetime.now()
-    entry_type = get_entry_type(topic)
+    entry_type = entry_type
     entry_value = str(data)
     entry_status = ST_RECIEVED
     entry = {"time" : str(entry_time),
              "type" : entry_type,
              "value" : str(entry_value),
              "status" : entry_status}
-    #entry_id = db.received_data.insert_one(entry).inserted_id
     entry_id = db.insert(entry)
     print("inserted " + str(entry_id))
     
-    #
     db.update({'_id' : entry_id}, doc_ids=[int(entry_id)]) 
     
     size = get_db_size()
     print("curent size: " + str(size))
     if(size > settings["max_db_size"]):
-        client.publish("5gdrone/heart/command", "clear_sent")
+        client.publish(heart_command_topic, "clear_sent")
     return entry_id
 
 def get_entry(identifier):
@@ -128,9 +127,7 @@ def get_entry(identifier):
 
 def mark_delivered(identifier):
     print("confirming: " + identifier)
-    
-    #new_value={"$set" : {"status":ST_DELIVERED}}
-    #db.received_data.update_one({"_id" : ObjectId(identifier)}, new_value)
+
     db.update({'status' : ST_DELIVERED}, doc_ids=[int(identifier)]) 
     
 
@@ -145,11 +142,8 @@ def process_payload(payload, encoding='utf-8'):
         data=decoded
         return data
 
-# The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
     client.subscribe("5gdrone/heart/#")
 
 def get_time_from_seconds(val):
@@ -169,20 +163,18 @@ def get_time_from_seconds(val):
         return(datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds))
     else:
         raise ValueError("Timeout cannot be longer than 24 hours!")
-
-
     pass 
 
-# The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     print(msg.topic+" "+str(msg.payload))
     data = process_payload(msg.payload)
     topic = msg.topic.split('/')
     
     ##select action based on topic
-    if(topic[2] in [bt_topic, zb_topic]):
-        entry_id = push_entry(data, topic)
-        send_data(get_entry(entry_id))
+    if(topic[2] in sensor_topics):
+        if len(data) <= 1000: #i am not willing to deal with this stuff, begone
+            entry_id = push_entry(data, topic[2])
+            send_data(get_entry(entry_id))
     elif(topic[2] == 'test'): 
         entry_id = push_entry(data, topic)
         send_data(get_entry(entry_id))
@@ -190,14 +182,15 @@ def on_message(client, userdata, msg):
         print("received command:" + str(data))
         process_command(data)
     elif(topic[2] == 'settings'):
+        settings = data
+        update_wifi()
         print("settings updated: " + str(data))
     else:
         print("Unsupported topic: " + str(topic[2]))
 
     #for testing reasons
-    #for item in db.received_data.find():
-    for item in db:
-        print(item)
+    #for item in db:
+    #    print(item)
     
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
@@ -220,5 +213,4 @@ while True:
     if(timer % settings['resend_timeout'] == 0):
         #the mqtt client thread will carry out all db operations, to make synchronizarion easier
         print("sending resend command")
-        client.publish("5gdrone/heart/command", "resend_all")
-        
+        client.publish(heart_command_topic, "resend_all")

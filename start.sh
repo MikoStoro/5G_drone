@@ -2,13 +2,26 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 echo $SCRIPT_DIR
 
+
+
 echo "starting system..."
-python -m venv $SCRIPT_DIR/drone-venv 
-docker-compose up &  #prepare environment
+source $SCRIPT_DIR/drone-venv/bin/activate
+
+docker compose up &  #prepare environment
 sleep 5 #wait until mqtt server is online
-python $SCRIPT_DIR/heart_module/heart.py #start central module
 python $SCRIPT_DIR/modem/modem_config.py #configure modem before use
-python $SCRIPT_DIR/modem/mqtt_daemon.py #start communication with the client
+echo 'MODEM CONFIGURED'
+$SCRIPT_DIR/heart_module/run_heart.sh & #start central module
+echo 'HEART STARTED'
+$SCRIPT_DIR/modem/run_modem.sh & #start communication with the client
+echo 'MODEM DAEMON RUNNING'
+
+echo 'system is running' 
+
+
+read -p "Press enter to stop" </dev/tty
+
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 #start bt module
 

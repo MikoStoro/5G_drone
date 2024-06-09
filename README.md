@@ -2,7 +2,7 @@
 ## Instrukcja Obsługi
 ### Przygotowanie środowiska
 Przed pierwszym uruchomieniem aplikacji należy uruchomić skrypt setup.sh, który przygotuje dla niej środowisko pracy.
-Zkrypt ten wystarczy uruchomić raz.
+Skrypt ten wystarczy uruchomić raz.
 Po zmodyfikowaniu plików konfiguracyjnych systemu należy uruchomić setup.sh ponownie, w celu zastosowania wprowadzonych zmian (poprzednie środowisko zostanie automatycznie usunięte)
 Aby uruchomienie skryptu stało się możliwe, może być konieczne użycie komendy "chmod +x setup.sh". 
 Uwaga: Skrypt pobiera niezbędne biblioteki z siciowych repozytoriów - niezbędna jest łączność z internetem.
