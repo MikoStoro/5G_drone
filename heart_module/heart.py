@@ -13,8 +13,10 @@ ST_DELIVERED=1
 
 disable_ap = 'sudo systemctl disable dnsmasq && sudo systemctl disable hostapd'
 enable_ap = 'sudo systemctl enable dnsmasq && sudo systemctl enable hostapd'
-connect_modem = 'sudo ' + sys.path[0] + '../modem/connect_modem.sh'
-disconnect_modem = "sudo kill $(ps aux | grep connect_modem  | grep -v grep | awk '{print $2}')"
+start_ap = 'sudo systemctl start dnsmasq && sudo systemctl start hostapd'
+stop_ap = 'sudo systemctl stop dnsmasq && sudo systemctl stop hostapd'
+connect_modem = 'sudo ' + sys.path[0] + '/../modem/connect_modem.sh &'
+disconnect_modem = "sudo kill $(ps aux | grep connect_modem  | grep -v grep | awk '{print $2}') && sudo kill $(ps aux | grep simcom  | grep -v grep | awk '{print $2}') "
 
 client_data_topic = '5gdrone/client/data'
 client_settings_topic = '5gdrone/client/settings'
@@ -47,12 +49,18 @@ db = TinyDB(db_path)
 '''
 
 def update_wifi():
-	if settings['wifi']==0:
-		os.system(disable_ap)
-		os.system(disconnect_modem)
-	if settings['wifi']==1:
-		os.system(connect_modem)
-		os.system(enable_ap)
+	wifi_state =  settings['wifi']
+	print('wIFI STATE ' + str(wifi_state))
+	if str(wifi_state)=='0':
+		print('DISABLING WIFI')
+		print(os.system(stop_ap))                                       
+		print(os.system(disable_ap))
+		print(os.system(disconnect_modem))
+	if str(wifi_state)=='1':
+		print('ENABLING WIFI')
+		print(os.system(connect_modem))          
+		print(os.system(enable_ap))
+		print(os.system(start_ap))
 
 def send_data(data):
     try:
@@ -165,7 +173,25 @@ def get_time_from_seconds(val):
         raise ValueError("Timeout cannot be longer than 24 hours!")
     pass 
 
+def update_settings(new_settings):
+	global settings
+	global resend_time
+	new_wifi = int(new_settings['wifi'])
+	new_timeout = int(new_settings['resend_timeout'])
+	wifi_changed = (settings['wifi'] != new_wifi)
+	timeout_changed = (settings['resend_timeout'] != new_timeout)
+	
+	settings['resend_timeout'] = new_timeout
+	settings['wifi'] = new_wifi
+	settings['max_db_size'] = int(new_settings['max_db_size'])
+	if wifi_changed:
+		update_wifi()
+	if timeout_changed:
+		resend_time = get_time_from_seconds(settings["resend_timeout"])
+		
+
 def on_message(client, userdata, msg):
+
     print(msg.topic+" "+str(msg.payload))
     data = process_payload(msg.payload)
     topic = msg.topic.split('/')
@@ -182,9 +208,8 @@ def on_message(client, userdata, msg):
         print("received command:" + str(data))
         process_command(data)
     elif(topic[2] == 'settings'):
-        settings = data
-        update_wifi()
-        print("settings updated: " + str(data))
+        update_settings(data)
+        print("settings updated: " + str(settings))
     else:
         print("Unsupported topic: " + str(topic[2]))
 
@@ -201,7 +226,7 @@ client.loop_start()
 
 resend_time = get_time_from_seconds(settings["resend_timeout"])
 
-
+update_wifi()
 timer = 0
 while True:
     #reset every 24h
