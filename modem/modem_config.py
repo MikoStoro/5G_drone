@@ -1,8 +1,13 @@
 import modem_utils
 import serial
 import time
+import os
+
+
+PATH = os.environ['MAIN_DIR']
+print(PATH)
 DEVICE = '/dev/ttyUSB2'
-CONFIG_PATH = 'config-files/modem.config'
+CONFIG_PATH = PATH + '/config-files/modem.config'
 
 
 file = open(CONFIG_PATH)

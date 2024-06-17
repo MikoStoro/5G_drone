@@ -28,15 +28,23 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("5gdrone/client/settings")
 
 def display_entry(data):
-    tresc.value += str(data['time']) + " " + str(data['type']) + '\n'
+    entry = ""
+    
+    #tresc.value += str(data['time']) + " " + str(data['type']) + '\n'
+    entry += str(data['time']) + " " + str(data['type']) + '\n'
     value = data['value']
     try:
         value_dict = ast.literal_eval(value)
         for key,value in value_dict.items():
-            tresc.value+='\t' + str(key) + " " + str(value) + '\n'
+            #tresc.value+='\t' + str(key) + " " + str(value) + '\n'
+            entry +='\t' + str(key) + " " + str(value) + '\n'
     except:
-        tresc.value+='\t' + value + '\n'
-	
+        #tresc.value+='\t' + value + '\n'
+        entry +='\t' + value + '\n'
+    
+    #tresc.insert('1.0', entry)
+    tresc.value = entry + tresc.value
+    return entry
 
 def on_message(client,userdata,msg):
 
@@ -52,9 +60,8 @@ def on_message(client,userdata,msg):
             id = data['_id']
             resposne= "confirm " + str(id)
             client.publish("5gdrone/heart/command",resposne)
-            display_entry(data)
-        zapisz_do_pliku(data)
-
+            entry = display_entry(data)
+            zapisz_do_pliku(entry)
         
 
 def on_disconnect(client, userdata, rc):
@@ -65,10 +72,10 @@ def on_disconnect(client, userdata, rc):
 def wyswietl(data):
     print(type(data))
     
-    
     if type(data) is dict:
         for key,value in data.items():
-            tresc.value+='\t' + str(key) + " " + str(value) + '\n'
+            #tresc.value+='\t' + str(key) + " " + str(value) + '\n'
+            tresc.insert("1.0", "'\t' + str(key) + " " + str(value) + '\n'")
     else:
         tresc.value+='\t' + data + '\n'
 		
@@ -96,11 +103,12 @@ def wyslanie(czas,dane,wifi):
     client.publish("5gdrone/heart/settings",str(settings))
     print("tu"+str(settings))
 
+czas=datetime.datetime.now()
+nazwa_pliku = "5g_drone_" +  czas.strftime("%Y-%m-%d_%H-%M") + ".txt"
+
 
 def zapisz_do_pliku(data):
-    czas=datetime.datetime.now()
-    nazwa = czas.strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
-    with open(nazwa,'w') as plik:
+    with open(nazwa_pliku,'a') as plik:
         plik.write(str(tresc.value))
 
 def laczenie():
@@ -124,6 +132,7 @@ def laczenie():
     print("tu")
 
 def polacz(adres_box,port_box,login_box,password_box):
+    global client
     print(str(adres_box.value))
     print(str(port_box.value))
     adres=str(adres_box.value)
@@ -150,21 +159,27 @@ def wyczysc():
 app=App(title="Client app",width=800,height=500)
 window=Window(app,width=200, height=150)
 window.hide()
-tresc=TextBox(app,multiline=True, scrollbar=True,width="75",height="fill",align="right")
+tresc=TextBox(app,multiline=True, enabled=False, scrollbar=True,width="75",height="fill",align="right")
 button1 = PushButton(app,align="top",text="wyczysc",command=wyczysc)
 button2=PushButton(app,align="top",text="polacz",command=laczenie)
 button3 =PushButton(app,align="top",text="ustawienia",command=ustawienia)
 settings={"resend_timeout":5,"max_db_size":1000,"wifi":0}
+
 try:
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
-    client.connect("localhost", 1883, 60)
+    
+    login = "vtzciybt:vtzciybt"
+    password = "b_F7I3JHJVgw9LdVcJ8zL6zTheLb0-6Z"
+    client.username_pw_set(login, password)
+    client.connect("cow.rmq2.cloudamqp.com", 1883)
     client.loop_start()
     client.publish("5gdrone/heart/command","get_settings")
-except:
+except Exception as e:
     informacja=Text(app,text="Nie udalo sie podlaczyc",align="top")
+    print(e)
 button4=PushButton(app,text="Prześlij ponownie",command=client.publish("5gdrone/heart/command","resend_all"))  
 
 app.display()

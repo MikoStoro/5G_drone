@@ -4,6 +4,8 @@ import modem_utils as modem
 import paho.mqtt.client as mosquitto
 import threading
 import mqtt_config as config
+import traceback
+import modem_config
 
 
 port_open = 0
@@ -11,23 +13,31 @@ port_open = 0
 DEVICE = '/dev/ttyUSB2'
 
 
+
 mp = modem.open_port(DEVICE)
+
+
 
 read_buffer = ''
 write_buffer = []
 write_buffer_lock = threading.Lock()
 mqtt_connected = 0
+curr_id = 0
 
 def on_connect(client, userdata, flags, rc):
     print("rc: " + str(rc))
 
 def on_message(mosq, obj, msg):
-	global mqtt_connected
-	if(mqtt_connected == 1):
-		mqtt_publish(str(msg.topic), msg.payload.decode())
-		#print(msg.topic + str(msg.qos) + " " + str(msg.payload))
-	else:
-		print("not connected!")
+    global mqtt_connected
+    try:
+        if(mqtt_connected == 1):
+            mqtt_publish(str(msg.topic), msg.payload.decode())
+            # print(msg.topic + str(msg.qos) + " " + str(msg.payload))
+        else:
+            print("not connected!")
+    except Exception as e:
+        print("MQTT DAEMON: BAD MESSAGE")
+        print(e)
 
 def on_publish(mosq, obj, mid):
     print("mid: " + str(mid))
@@ -88,21 +98,22 @@ def get_core_comm(comm:str):
 
         
 class BufferCommand(): 
-    def __init__(self,command:str, data = None):
+    def __init__(self,command:str, data = None, identifier = None):
         self.command = command
         self.core = get_core_comm(command)
         self.got_response = False
         self.sent = False
         self.data = data
+        self.id = identifier
         #print("CREATED BUFFER COMMAND: " + str(command) + " " + str(data))
     
     def __str__(self):
-        return self.command
+        return self.command + " s: " + str(self.sent) + " r: " + str(self.got_response)
 
 
-def write_command(command: str, data: str = None):
+def write_command(command: str, data: str = None, identifier = None):
     with write_buffer_lock:
-	    write_buffer.append(BufferCommand(command, data))
+	    write_buffer.append(BufferCommand(command, data, identifier))
 
 def get_len(text:str):
     return str(len(text.encode()))
@@ -136,13 +147,18 @@ def mqtt_init():
     enter_topics()
     mqtt_connected = 1
 
+
+
 def mqtt_publish(topic, data):
+    global curr_id
     comm = 'AT+CMQTTTOPIC=0,' + get_len(topic)
-    write_command(comm, topic)
+    write_command(comm, topic, identifier = curr_id)
     comm = 'AT+CMQTTPAYLOAD=0,' + get_len(data)
-    write_command(comm, data)
+    write_command(comm, data, identifier = curr_id)
     comm = 'AT+CMQTTPUB=0,0,120'
-    write_command(comm)
+    write_command(comm, identifier = curr_id)
+    curr_id += 1
+    curr_id %= 9999
 
 current_payload = None
 current_topic = None
@@ -162,8 +178,7 @@ def process_response(line):
  
 
     print(line)
-    if ('=' or '?') in line:
-        #print("Not a valid response\n")
+    if ('=' or '?' or '>') in line:
         return
     try:
         split_line = line.split(':')
@@ -188,20 +203,22 @@ def process_response(line):
         parameters = split_line[1].strip().split(',')
 
 
-    elif command == 'CMQTTCONNECT':
+    if command == 'CMQTTCONNECT':
         err_code = parameters[1]
-        '''if(err_code == '0' or err_code == '23'):
+        if(err_code == '0' or err_code == '23' or err_code =='13'): #success or already connected
             enter_topics()
             time.sleep(1)
             mqtt_connected = 1
         else:
+            raise Exception("MQTT DAEMON: CONNECTION LOST")
             print('Connection failed!')
             clear_buffer()
-            mqtt_init()'''
+            mqtt_init()
 
     elif command == 'CMQTTNONET' or command == 'CMQTTCONNLOST':
-        mqtt_connected = 0
-        mqtt_init()
+        raise Exception("MQTT DAEMON: CONNECTION LOST")
+        #mqtt_connected = 0
+        #mqtt_init()
 
     elif command == 'CMQTTRXSTART':
         current_topic = None
@@ -242,9 +259,15 @@ def process_response(line):
                     current_payload += command
                 print("PAYLOAD IS NOW: " +current_payload)
             awaiting_response_data = None
+        else:
+            print('response code ' + command + ' not supported')
             
 mqtt_init()
 
+
+max_deadlock_counter = 5
+deadlock_counter = 0
+last_command = None
 
 while(True):
     waiting = mp.in_waiting
@@ -265,20 +288,40 @@ while(True):
         
     #Begin critical section
     with write_buffer_lock:
-        if '>' in read_buffer:
-            modem.send_and_leave(mp,(current_command.data)) 
-        
 		
         if len(write_buffer) >= 1:
             item = write_buffer[0]
-            if current_command is None:
+            if current_command is None and item.sent ==False:
                 modem.send_and_leave(mp,item.command) 
                 current_command = item
                 item.sent = True
+                if item.data is not None:
+                    time.sleep(0.1)
         
+        waiting_bytes = mp.in_waiting
+        data = mp.read(waiting_bytes)
+        read_buffer += data.decode()
+        
+        if '>' in read_buffer:
+            modem.send_and_leave(mp,(current_command.data)) 
+            
         
 
         write_buffer[:] = [ x for x in write_buffer if (x.got_response == False)]
         #end critical section
-    time.sleep(0.15)
+    time.sleep(0.1)
+    #print("CURRENT COMMAND: " + str(current_command))
+    if last_command == current_command:
+        deadlock_counter += 1
+    else:
+        deadlock_counter = 0
+        last_command = current_command
+    if current_command is not None and deadlock_counter >= max_deadlock_counter:
+        identifier = current_command.id
+        current_command = None
+        write_buffer[:] =  [ x for x in write_buffer if (x.id != identifier)] #remove whole group of commands associated with current one
+        deadlock_counter = 0
+        
+        
+
         

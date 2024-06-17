@@ -46,6 +46,10 @@ def hard_reset(dev = None):
 	mp = open_port(dev)
 	send_and_leave('at+cusbcfg=usbid,1e0e,9001')
 
+def reset_modem(dev = None):
+	mp = open_port(dev)
+	send_and_leave('at+creset')
+
 def open_port(device):
 	mp_inner = None
 	port_open = False
